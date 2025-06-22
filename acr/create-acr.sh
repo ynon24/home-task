@@ -17,26 +17,12 @@ else
       --location "$LOCATION"
 fi
 
-# Check if ACR is already attached to cluster
 echo "🔗 Checking ACR attachment to AKS cluster..."
 
-# Always try to attach (it's idempotent - won't fail if already attached)
 echo "🔗 Ensuring ACR is attached to AKS cluster..."
 az aks update \
   --resource-group "$RESOURCE_GROUP" \
   --name "$CLUSTER_NAME" \
   --attach-acr "$ACR_NAME"
 
-# Get ACR login server
-# ACR_LOGIN_SERVER=$(az acr show --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" --query "loginServer" -o tsv)
-
 echo "✅ ACR setup complete!"
-# echo "ACR Name: $ACR_NAME"
-# echo "ACR Login Server: $ACR_LOGIN_SERVER"
-
-# Export for use in parent script - this is the key fix
-# export ACR_LOGIN_SERVER
-# export ACR_NAME
-
-# Also echo for verification
-# echo "Exported ACR_LOGIN_SERVER=$ACR_LOGIN_SERVER"
