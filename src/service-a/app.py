@@ -50,6 +50,10 @@ class BitcoinPriceMonitor:
         self.last_updated = None
         self.current_source = None
         
+        # NEW: 10-minute average caching
+        self.cached_average = 0
+        self.last_average_calculation = None
+        
         # Load existing data from Redis on startup
         self._load_from_redis()
         
@@ -193,19 +197,34 @@ class BitcoinPriceMonitor:
         logger.error("🚨 All Bitcoin APIs failed!")
         return None, None
     
+    def _should_recalculate_average(self):
+        """Check if 10 minutes have passed since last average calculation"""
+        if self.last_average_calculation is None:
+            return True
+        
+        elapsed = datetime.now() - self.last_average_calculation
+        return elapsed >= timedelta(minutes=10)
+    
     def calculate_average(self):
-        """Calculate average from in-memory data, fallback to Redis"""
-        # Try in-memory first (fastest)
+        """Calculate average only every 10 minutes, otherwise return cached value"""
+        # Return cached average if less than 10 minutes have passed
+        if not self._should_recalculate_average():
+            return self.cached_average
+        
+        # Calculate new average (same logic as before)
         if len(self.prices) > 0:
-            return sum(self.prices) / len(self.prices)
-            
-        # Fallback to Redis (for when pod just restarted)
-        redis_avg = self._get_redis_average()
-        if redis_avg:
-            logger.info("📊 Using Redis-based average (pod recently restarted)")
-            return redis_avg
-            
-        return 0
+            new_average = sum(self.prices) / len(self.prices)
+        else:
+            # Fallback to Redis (for when pod just restarted)
+            redis_avg = self._get_redis_average()
+            new_average = redis_avg if redis_avg else 0
+        
+        # Update cache
+        self.cached_average = new_average
+        self.last_average_calculation = datetime.now()
+        
+        logger.info(f"📈 NEW Average calculated: ${new_average:,.2f} USD (will be used for next 10 minutes)")
+        return new_average
     
     def run_monitor(self):
         """Background monitoring function"""
@@ -228,9 +247,10 @@ class BitcoinPriceMonitor:
                 
                 logger.info(f"📊 Bitcoin Price: ${price:,.2f} USD (from {source})")
                 
+                # CHANGED: Only log average every 10 minutes (when it actually updates)
                 if minute_counter % 10 == 0:
-                    avg_price = self.calculate_average()
-                    logger.info(f"📈 Average Bitcoin Price (last 10 readings): ${avg_price:,.2f} USD")
+                    avg_price = self.calculate_average()  # This will trigger recalculation
+                    logger.info(f"🔄 Updated 10-minute average: ${avg_price:,.2f} USD")
             else:
                 logger.warning("⚠️ Failed to fetch price from any API, will retry in 60 seconds")
             
@@ -249,18 +269,22 @@ def get_current_price():
             "status": "No successful API calls yet"
         }), 503
     
-    # Calculate 10-minute average (works even after pod restart)
-    avg_price = monitor.calculate_average()
-    
-    return jsonify({
+    # Base response (always included)
+    response = {
         "service": "bitcoin-service-a",
         "current_price": f"${monitor.current_price:,.2f} USD",
-        "average_10min": f"${avg_price:,.2f} USD" if avg_price > 0 else "Not enough data",
         "last_updated": monitor.last_updated,
         "price_history_count": len(monitor.prices),
         "data_source": monitor.current_source,
         "persistence": "Redis-backed"
-    })
+    }
+    
+    # ONLY include average_10min field if we're at a 10-minute mark
+    if monitor._should_recalculate_average():
+        avg_price = monitor.calculate_average()  # This will trigger recalculation
+        response["average_10min"] = f"${avg_price:,.2f} USD" if avg_price > 0 else "Not enough data"
+    
+    return jsonify(response)
 
 @app.route('/health')
 def health_check():
