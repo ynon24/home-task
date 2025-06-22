@@ -123,9 +123,9 @@ if command -v docker &> /dev/null; then
 else
     echo "Docker not found, using Azure Container Registry build tasks..."
     echo "Building Service A..."
-    az acr build --registry "$ACR_NAME" --image "service-a:latest" src/services/service-a/
+    az acr build --registry "$ACR_NAME" --image "service-a:latest" src/service-a/
     echo "Building Service B..."
-    az acr build --registry "$ACR_NAME" --image "service-b:latest" src/services/service-b/
+    az acr build --registry "$ACR_NAME" --image "service-b:latest" src/service-b/
 fi
 
 echo "✅ All services built and pushed to ACR!"
