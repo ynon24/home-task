@@ -1,0 +1,69 @@
+# k8s/services/service-a/deployment.yaml
+# Updated Service A deployment with Redis environment variables
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-a
+  namespace: service-a
+  labels:
+    app: service-a
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: service-a
+  template:
+    metadata:
+      labels:
+        app: service-a
+    spec:
+      containers:
+      - name: service-a
+        image: bitcoinrateacr.azurecr.io/service-a:latest
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        env:
+        # ✅ ADD THESE REDIS ENVIRONMENT VARIABLES
+        - name: REDIS_HOST
+          value: "redis-service.redis.svc.cluster.local"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources: 
+          requests:
+            cpu: "100m"    
+            memory: "128Mi" 
+          limits:
+            cpu: "500m"    
+            memory: "512Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6

@@ -1,0 +1,16 @@
+# k8s/infrastructure/redis/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: redis
+  labels:
+    app: redis
+spec:
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+  selector:
+    app: redis
+  type: ClusterIP

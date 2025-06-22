@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-b
+  namespace: service-b
+  labels:
+    app: service-b
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-b
+  template:
+    metadata:
+      labels:
+        app: service-b
+    spec:
+      serviceAccountName: service-b-sa
+      containers:
+      - name: service-b
+        image: bitcoinrateacr.azurecr.io/service-b:latest
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        resources:          
+          requests:
+            cpu: "50m"      
+            memory: "64Mi"  
+          limits:
+            cpu: "200m"     
+            memory: "256Mi"  # 👈 FIXED: Added missing closing quote
+        env:
+        - name: SERVICE_NAME
+          value: "service-b"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5

@@ -1,0 +1,38 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: service-a-hpa
+  namespace: service-a
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: service-a
+  minReplicas: 2          # Always keep at least 2 pods (high availability)
+  maxReplicas: 8          # Scale up to max 8 pods during traffic spikes
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70    # Scale when average CPU > 70%
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80    # Scale when average Memory > 80%
+  behavior:                       # Control how fast it scales
+    scaleUp:
+      stabilizationWindowSeconds: 60    # Wait 1 min before scaling up again
+      policies:
+      - type: Percent
+        value: 100              # Max double the pods at once (2→4→8)
+        periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300   # Wait 5 min before scaling down
+      policies:
+      - type: Percent
+        value: 50               # Max remove 50% of pods at once
+        periodSeconds: 60

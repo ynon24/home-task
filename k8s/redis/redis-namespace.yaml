@@ -1,0 +1,7 @@
+# k8s/infrastructure/redis/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: redis
+  labels:
+    name: redis

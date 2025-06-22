@@ -1,0 +1,14 @@
+# k8s/infrastructure/redis/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: redis
+data:
+  redis.conf: |
+    # Redis configuration for Bitcoin price storage
+    maxmemory 256mb
+    maxmemory-policy allkeys-lru
+    save 60 100
+    appendonly yes
+    appendfsync everysec

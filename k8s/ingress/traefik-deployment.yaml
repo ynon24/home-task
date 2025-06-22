@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traefik
+  namespace: traefik
+  labels:
+    app: traefik
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traefik
+  template:
+    metadata:
+      labels:
+        app: traefik
+    spec:
+      serviceAccountName: traefik
+      containers:
+      - name: traefik
+        image: traefik:v3.0
+        args:
+        - --api.dashboard=true
+        - --api.insecure=true
+        - --entrypoints.web.address=:8000
+        - --entrypoints.websecure.address=:8443
+        - --providers.kubernetesingress=true
+        - --log.level=INFO
+        - --accesslog=true
+        - --ping=true
+        ports:
+        - name: web
+          containerPort: 8000
+        - name: websecure
+          containerPort: 8443
+        - name: admin
+          containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 50Mi
+          limits:
+            cpu: 300m
+            memory: 150Mi
