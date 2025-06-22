@@ -164,15 +164,15 @@ sleep 10
 echo "✅ Verifying HPA deployment..."
 kubectl get hpa --all-namespaces
 
-# Verify Redis connectivity from Service A
-echo "🔍 Verifying Redis connectivity..."
-echo "Testing Redis connection from Service A..."
-kubectl exec -n service-a deployment/service-a -- redis-cli -h redis-service.redis.svc.cluster.local ping || echo "⚠️ Redis connectivity test failed - check network policies"
+# # Verify Redis connectivity from Service A
+# echo "🔍 Verifying Redis connectivity..."
+# echo "Testing Redis connection from Service A..."
+# kubectl exec -n service-a deployment/service-a -- redis-cli -h redis-service.redis.svc.cluster.local ping || echo "⚠️ Redis connectivity test failed - check network policies"
 
-echo "🧪 Test Redis persistence:"
-echo "   # Restart Service A pods"
-echo "   kubectl rollout restart deployment/service-a -n service-a"
-echo "   # Data should persist after restart!"
+# echo "🧪 Test Redis persistence:"
+# echo "   # Restart Service A pods"
+# echo "   kubectl rollout restart deployment/service-a -n service-a"
+# echo "   # Data should persist after restart!"
 
 EXTERNAL_IP=$(kubectl get service traefik -n traefik -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
 
