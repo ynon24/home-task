@@ -133,7 +133,13 @@ class BitcoinPriceMonitor:
             for item in history_data:
                 data = json.loads(item)
                 self.prices.append(data["price"])
-                
+                logger.info(
+                "🔁 Loaded historical price:\n"
+                f"   • Price:  ${data['price']:,.2f}\n"
+                f"   • Source: {data['source']}\n"
+                f"   • Time:   {data['timestamp']}"
+            )
+
             logger.info(f"🔄 Restored {len(self.prices)} price points from Redis")
             
         except Exception as e:
